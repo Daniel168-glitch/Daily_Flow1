@@ -8,7 +8,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // เปลี่ยนมาเรียกใช้ signInWithRedirect และ getRedirectResult
         import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged } 
             from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
@@ -25,37 +24,51 @@
         const auth     = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        const btn = document.getElementById('loginBtn');
+        // ดึง Element ของปุ่ม Login มารอไว้ (ใช้ ID 'loginBtn' ให้ตรงกับ HTML ด้านล่าง)
+        let btn;
+        document.addEventListener("DOMContentLoaded", () => {
+            btn = document.getElementById('loginBtn');
+        });
 
         // 1. จัดการเมื่อผู้ใช้ถูกส่งตัวกลับมาจากการล็อกอินของ Google (ใช้สำหรับมือถือ)
         getRedirectResult(auth).then((result) => {
             if (result) {
-                // ถ้ามี result แสดงว่าเพิ่งล็อกอินผ่าน Redirect สำเร็จ
                 sessionStorage.setItem('userEmail', result.user.email);
                 window.location.href = 'index.html';
             }
         }).catch((error) => {
-            btn.disabled = false;
-            btn.textContent = 'เข้าสู่ระบบด้วย Google';
+            console.error(error);
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'เข้าสู่ระบบด้วย Google';
+            }
             alert('เกิดข้อผิดพลาด: ' + error.message);
         });
 
         // 2. เช็คสถานะว่าล็อกอินค้างไว้หรือไม่ (ครอบคลุมทั้งคอมพิวเตอร์และมือถือ)
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // บันทึกอีเมลเพื่อไปใช้แยกข้อมูลในหน้า index.html
                 sessionStorage.setItem('userEmail', user.email);
                 window.location.href = 'index.html';
             }
         });
 
-        // 3. ฟังก์ชันกดปุ่มเข้าสู่ระบบ
+        // 3. ฟังก์ชันกดปุ่มเข้าสู่ระบบ (ปรับปรุงเรียงลำดับและเพิ่ม .catch เรียบร้อย)
         window.loginWithGoogle = () => {
-            btn.disabled = true;
-            btn.textContent = 'กำลังพาไปหน้าเข้าสู่ระบบ...';
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'กำลังพาไปหน้าเข้าสู่ระบบ...';
+            }
             
-            // ใช้ Redirect แทน Popup เพื่อแก้ปัญหาจอดำหรือโดนบล็อกในมือถือ
-            signInWithRedirect(auth, provider);
+            signInWithRedirect(auth, provider)
+                .catch((error) => {
+                    console.error(error); // เพื่อดูรายละเอียด Error ใน Console
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = 'เข้าสู่ระบบด้วย Google';
+                    }
+                    alert('ไม่สามารถเปิดหน้าเข้าสู่ระบบได้: ' + error.message);
+                });
         };
     </script>
 
