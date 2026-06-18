@@ -34,7 +34,7 @@
             btn.disabled = true;
             btn.textContent = 'กำลังเข้าสู่ระบบ...';
 
-            getRedirectResult(auth, provider)
+            signInWithPopup(auth, provider)
                 .then(() => {
                     window.location.href = 'index.html';
                 })
