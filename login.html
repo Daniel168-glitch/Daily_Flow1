@@ -6,72 +6,6 @@
     <title>Login - Daily Flow</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500&display=swap" rel="stylesheet">
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged } 
-            from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBWMmdYSO26HuTqC2AI2E9hdnmYuIQwueY",
-            authDomain: "dailyflowapp.firebaseapp.com",
-            projectId: "dailyflowapp",
-            storageBucket: "dailyflowapp.firebasestorage.app",
-            messagingSenderId: "990095162134",
-            appId: "1:990095162134:web:134923b333c3b2ac63ee37"
-        };
-
-        const app      = initializeApp(firebaseConfig);
-        const auth     = getAuth(app);
-        const provider = new GoogleAuthProvider();
-
-        // ดึง Element ของปุ่ม Login มารอไว้ (ใช้ ID 'loginBtn' ให้ตรงกับ HTML ด้านล่าง)
-        let btn;
-        document.addEventListener("DOMContentLoaded", () => {
-            btn = document.getElementById('loginBtn');
-        });
-
-        // 1. จัดการเมื่อผู้ใช้ถูกส่งตัวกลับมาจากการล็อกอินของ Google (ใช้สำหรับมือถือ)
-        getRedirectResult(auth).then((result) => {
-            if (result) {
-                sessionStorage.setItem('userEmail', result.user.email);
-                window.location.href = 'index.html';
-            }
-        }).catch((error) => {
-            console.error(error);
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = 'เข้าสู่ระบบด้วย Google';
-            }
-            alert('เกิดข้อผิดพลาด: ' + error.message);
-        });
-
-        // 2. เช็คสถานะว่าล็อกอินค้างไว้หรือไม่ (ครอบคลุมทั้งคอมพิวเตอร์และมือถือ)
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                sessionStorage.setItem('userEmail', user.email);
-                window.location.href = 'index.html';
-            }
-        });
-
-        // 3. ฟังก์ชันกดปุ่มเข้าสู่ระบบ (ปรับปรุงเรียงลำดับและเพิ่ม .catch เรียบร้อย)
-        window.loginWithGoogle = () => {
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = 'กำลังพาไปหน้าเข้าสู่ระบบ...';
-            }
-            
-            signInWithRedirect(auth, provider)
-                .catch((error) => {
-                    console.error(error); // เพื่อดูรายละเอียด Error ใน Console
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.textContent = 'เข้าสู่ระบบด้วย Google';
-                    }
-                    alert('ไม่สามารถเปิดหน้าเข้าสู่ระบบได้: ' + error.message);
-                });
-        };
-    </script>
-
     <style>
         :root {
             --bg-gradient: linear-gradient(135deg, #3a3560 0%, #5a4f8a 100%);
@@ -158,5 +92,80 @@
 
     <p class="note">ข้อมูลของแต่ละบัญชีจะถูกเก็บแยกกัน<br>และไม่ปะปนกับผู้ใช้คนอื่น</p>
 </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged } 
+            from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBWMmdYSO26HuTqC2AI2E9hdnmYuIQwueY",
+            authDomain: "dailyflowapp.firebaseapp.com",
+            projectId: "dailyflowapp",
+            storageBucket: "dailyflowapp.firebasestorage.app",
+            messagingSenderId: "990095162134",
+            appId: "1:990095162134:web:134923b333c3b2ac63ee37"
+        };
+
+        const app      = initializeApp(firebaseConfig);
+        const auth     = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        const btn = document.getElementById('loginBtn');
+
+        // ตั้งค่าเริ่มต้นระหว่างเช็คสถานะการเข้าสู่ระบบ
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'กำลังตรวจสอบสถานะ...';
+        }
+
+        // 1. เช็คสถานะการล็อกอินอัตโนมัติเมื่อเปิดหน้าเว็บ (ครอบคลุมการกดกลับมาจาก Google และการจำ Session)
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // บันทึกอีเมลและเปลี่ยนหน้าไปยังหน้าหลักทันที
+                sessionStorage.setItem('userEmail', user.email);
+                window.location.href = 'index.html';
+            } else {
+                // ถ้ายังไม่ได้เข้าสู่ระบบ ปลดล็อกปุ่มให้กดใช้งานปกติ
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'เข้าสู่ระบบด้วย Google';
+                }
+            }
+        });
+
+        // 2. จัดการเมื่อผู้ใช้สลับหน้าจอกลับมาจากการรีไดเรกต์ของ Google
+        getRedirectResult(auth).then((result) => {
+            if (result && result.user) {
+                sessionStorage.setItem('userEmail', result.user.email);
+                window.location.href = 'index.html';
+            }
+        }).catch((error) => {
+            console.error(error);
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'เข้าสู่ระบบด้วย Google';
+            }
+            alert('เกิดข้อผิดพลาดจากการล็อกอิน: ' + error.message);
+        });
+
+        // 3. ฟังก์ชันการกดปุ่มเข้าสู่ระบบด้วย Redirect
+        window.loginWithGoogle = () => {
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'กำลังพาไปหน้าเข้าสู่ระบบ...';
+            }
+            
+            signInWithRedirect(auth, provider)
+                .catch((error) => {
+                    console.error(error);
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = 'เข้าสู่ระบบด้วย Google';
+                    }
+                    alert('ไม่สามารถเปิดหน้าเข้าสู่ระบบได้: ' + error.message);
+                });
+        };
+    </script>
 </body>
 </html>
