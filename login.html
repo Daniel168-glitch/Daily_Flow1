@@ -96,7 +96,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged } 
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } 
             from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
@@ -115,14 +115,12 @@
         const btn = document.getElementById('loginBtn');
         const btnText = document.getElementById('btnText');
 
-        // 1. เช็คสถานะการล็อกอินอัตโนมัติเมื่อเปิดหน้าเว็บ
+        // 1. ตรวจสอบสถานะว่าเคยล็อกอินค้างไว้หรือไม่
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // บันทึกอีเมลและเปลี่ยนหน้าไปยังหน้าหลักทันที
                 sessionStorage.setItem('userEmail', user.email);
-                window.location.href = 'index.html';
+                window.location.href = 'index.html'; // ถ้าล็อกอินแล้วไปหน้าหลักทันที
             } else {
-                // ถ้ายังไม่ได้เข้าสู่ระบบ ปลดล็อกปุ่มให้กดใช้งานปกติ
                 if (btn && btnText) {
                     btn.disabled = false;
                     btnText.textContent = 'เข้าสู่ระบบด้วย Google';
@@ -130,40 +128,31 @@
             }
         });
 
-        // 2. จัดการเมื่อผู้ใช้สลับหน้าจอกลับมาจากการรีไดเรกต์ของ Google
-        getRedirectResult(auth).then((result) => {
-            if (result && result.user) {
-                sessionStorage.setItem('userEmail', result.user.email);
-                window.location.href = 'index.html';
-            }
-        }).catch((error) => {
-            console.error(error);
-            if (btn && btnText) {
-                btn.disabled = false;
-                btnText.textContent = 'เข้าสู่ระบบด้วย Google';
-            }
-            alert('เกิดข้อผิดพลาดจากการล็อกอิน: ' + error.message);
-        });
-
-        // 3. ฟังก์ชันการกดปุ่มเข้าสู่ระบบ (แก้ไขที่ 2: ใช้ addEventListener แทนการใช้ inline onclick)
+        // 2. ฟังก์ชันล็อกอิน (เปลี่ยนมาใช้ระบบ Popup แทน Redirect)
         if (btn) {
             btn.addEventListener('click', () => {
                 if (btn && btnText) {
                     btn.disabled = true;
-                    btnText.textContent = 'กำลังพาไปหน้าเข้าสู่ระบบ...';
+                    btnText.textContent = 'กำลังเปิดหน้าต่างล็อกอิน...';
                 }
                 
-                signInWithRedirect(auth, provider)
+                signInWithPopup(auth, provider)
+                    .then((result) => {
+                        // เมื่อล็อกอินสำเร็จ ให้บันทึกข้อมูลและย้ายหน้า
+                        sessionStorage.setItem('userEmail', result.user.email);
+                        window.location.href = 'index.html';
+                    })
                     .catch((error) => {
                         console.error(error);
                         if (btn && btnText) {
                             btn.disabled = false;
                             btnText.textContent = 'เข้าสู่ระบบด้วย Google';
                         }
-                        alert('ไม่สามารถเปิดหน้าเข้าสู่ระบบได้: ' + error.message);
+                        // ป้องกันการเด้งแจ้งเตือนกรณีที่ผู้ใช้แค่กดปิดหน้าต่าง Popup ไปเอง
+                        if (error.code !== 'auth/popup-closed-by-user') {
+                            alert('ไม่สามารถล็อกอินได้: ' + error.message);
+                        }
                     });
             });
         }
     </script>
-</body>
-</html>
