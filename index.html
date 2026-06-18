@@ -6,7 +6,6 @@
     <title>Daily Flow - จัดการวันของคุณ</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-    <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -23,22 +22,26 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // ตรวจสอบสถานะ Login
+        // ตรวจสอบสถานะ Login อย่างถูกต้อง (รอเซิร์ฟเวอร์ตอบกลับ ไม่ดีดกลับก่อนเวลา)
         onAuthStateChanged(auth, (user) => {
             if (!user) {
-                // ยังไม่ได้ Login → กลับไปหน้า Login
                 window.location.href = 'login.html';
             } else {
-                // Login แล้ว → เริ่มแอพโดยส่ง userId เข้าไป
                 window.currentUserId = user.uid;
                 window.currentUserName = user.displayName || 'ผู้ใช้';
                 window.currentUserPhoto = user.photoURL || '';
-                initApp();
+                
+                // เรียกใช้ฟังก์ชันเตรียมแอปด้านล่าง
+                if (typeof window.initApp === 'function') {
+                    window.initApp();
+                }
             }
         });
 
+        // ฟังก์ชันออกจากระบบ
         window.doSignOut = () => {
             signOut(auth).then(() => {
+                sessionStorage.removeItem('userEmail'); // ล้างค่าเผื่อไว้
                 window.location.href = 'login.html';
             });
         };
@@ -82,7 +85,6 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0; overflow: hidden; pointer-events: none;
         }
-        /* glow สว่างขึ้นเล็กน้อยให้เข้ากับ bg ใหม่ */
         .glow-1 { position: absolute; top: -10%; left: -10%; width: 50vw; height: 50vw;
                   background: radial-gradient(circle, rgba(0, 229, 178, 0.12) 0%, transparent 70%); filter: blur(50px); }
         .glow-2 { position: absolute; bottom: -10%; right: -10%; width: 60vw; height: 60vw;
@@ -257,7 +259,6 @@
 
 <div class="container">
 
-    <!-- User Bar -->
     <div class="user-bar">
         <div class="user-info">
             <div id="userAvatarWrap"></div>
@@ -266,7 +267,6 @@
         <button class="logout-btn" onclick="window.doSignOut()">ออกจากระบบ</button>
     </div>
 
-    <!-- Header -->
     <header class="header">
         <div class="date-text" id="dateDisplay">โหลดข้อมูล...</div>
         <h1 class="greeting">
@@ -276,7 +276,6 @@
         <div class="sub-greeting">มาทำให้วันนี้เป็นวันที่ดีกันเถอะ</div>
     </header>
 
-    <!-- Progress -->
     <div class="glass-card">
         <div class="progress-header">
             <div class="progress-title">ภาพรวมวันนี้</div>
@@ -291,7 +290,6 @@
         </div>
     </div>
 
-    <!-- Add Task -->
     <div class="glass-card" style="padding:20px;">
         <div class="input-group">
             <div class="input-wrapper">
@@ -301,248 +299,5 @@
                 </button>
                 <div class="emoji-picker" id="emojiPicker"></div>
             </div>
-            <button class="add-btn" onclick="addTask()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            </button>
-        </div>
-        <div class="cat-scroll" id="categorySelector">
-            <div class="cat-badge active work"     data-cat="work">🔥 งาน</div>
-            <div class="cat-badge personal"         data-cat="personal">👤 ส่วนตัว</div>
-            <div class="cat-badge health"           data-cat="health">🥑 สุขภาพ</div>
-            <div class="cat-badge other"            data-cat="other">📌 อื่นๆ</div>
-        </div>
-    </div>
-
-    <!-- Filters -->
-    <div class="filters" id="filterSelector">
-        <button class="filter-btn active" data-filter="all">ทั้งหมด</button>
-        <button class="filter-btn" data-filter="todo">รอทำ</button>
-        <button class="filter-btn" data-filter="done">เสร็จแล้ว</button>
-    </div>
-
-    <!-- Task List -->
-    <div class="task-list" id="taskList"></div>
-
-    <!-- Summary -->
-    <div class="glass-card summary-card">
-        <h3 class="summary-title">สรุปตามหมวดหมู่</h3>
-        <div class="summary-item">
-            <div class="sum-dot work"></div><div class="sum-label">งาน</div>
-            <div class="sum-bar-bg"><div class="sum-fill work" id="sumFill-work"></div></div>
-            <div class="sum-text" id="sumText-work">0/0</div>
-        </div>
-        <div class="summary-item">
-            <div class="sum-dot personal"></div><div class="sum-label">ส่วนตัว</div>
-            <div class="sum-bar-bg"><div class="sum-fill personal" id="sumFill-personal"></div></div>
-            <div class="sum-text" id="sumText-personal">0/0</div>
-        </div>
-        <div class="summary-item">
-            <div class="sum-dot health"></div><div class="sum-label">สุขภาพ</div>
-            <div class="sum-bar-bg"><div class="sum-fill health" id="sumFill-health"></div></div>
-            <div class="sum-text" id="sumText-health">0/0</div>
-        </div>
-        <div class="summary-item">
-            <div class="sum-dot other"></div><div class="sum-label">อื่นๆ</div>
-            <div class="sum-bar-bg"><div class="sum-fill other" id="sumFill-other"></div></div>
-            <div class="sum-text" id="sumText-other">0/0</div>
-        </div>
-    </div>
-
-</div>
-
-<script>
-    // ===== Default tasks สำหรับ User ใหม่ =====
-    const DEFAULT_TASKS = [
-        { id: 1, text: "เช็คอีเมลและวางแผนงาน",            category: "work",     completed: false, starred: true  },
-        { id: 2, text: "ดื่มน้ำเปล่า 1 ลิตรครึ่ง",         category: "health",   completed: false, starred: false },
-        { id: 3, text: "อ่านบทความพัฒนาตัวเอง 15 นาที",    category: "personal", completed: false, starred: false }
-    ];
-
-    let tasks = [];
-    let currentCat    = 'work';
-    let currentFilter = 'all';
-    let storageKey    = '';   // จะ set หลัง login สำเร็จ
-
-    // ===== เรียกจาก Firebase module หลัง login =====
-    window.initApp = function() {
-        const uid = window.currentUserId;
-
-        // key แยกตาม UID ของ User แต่ละคน
-        storageKey = `dailyFlow_tasks_${uid}`;
-
-        // โหลดข้อมูลของ User นี้ (ถ้ายังไม่เคยมี → ใช้ Default)
-        const saved = localStorage.getItem(storageKey);
-        tasks = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_TASKS));
-
-        // แสดงชื่อและรูป
-        document.getElementById('userNameDisplay').textContent = window.currentUserName;
-        const avatarWrap = document.getElementById('userAvatarWrap');
-        if (window.currentUserPhoto) {
-            avatarWrap.innerHTML = `<img class="user-avatar" src="${window.currentUserPhoto}" alt="avatar">`;
-        } else {
-            const initial = window.currentUserName.charAt(0).toUpperCase();
-            avatarWrap.innerHTML = `<div class="user-avatar-placeholder">${initial}</div>`;
-        }
-
-        initDateTime();
-        initEmojiPicker();
-        renderTasks();
-    };
-
-    // ===== Save (แยก key ตาม user) =====
-    function saveTasks() {
-        if (storageKey) localStorage.setItem(storageKey, JSON.stringify(tasks));
-    }
-
-    // ===== Render =====
-    const taskListEl = document.getElementById('taskList');
-    const taskInput  = document.getElementById('taskInput');
-
-    function renderTasks() {
-        taskListEl.innerHTML = '';
-
-        let filtered = [...tasks];
-        if (currentFilter === 'todo') filtered = tasks.filter(t => !t.completed);
-        if (currentFilter === 'done') filtered = tasks.filter(t =>  t.completed);
-
-        filtered.sort((a,b) => (b.starred === a.starred) ? 0 : b.starred ? 1 : -1);
-
-        if (filtered.length === 0) {
-            taskListEl.innerHTML = `<div class="empty-state">🎉 ไม่มีรายการในหมวดหมู่นี้แล้ว</div>`;
-        }
-
-        const catLabel = { work:'งาน', personal:'ส่วนตัว', health:'สุขภาพ', other:'อื่นๆ' };
-        const checkSVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#130b2e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-
-        filtered.forEach(task => {
-            const el = document.createElement('div');
-            el.className = `task-item ${task.completed ? 'completed' : ''}`;
-            el.innerHTML = `
-                <div class="checkbox" onclick="toggleTask(${task.id})">${task.completed ? checkSVG : ''}</div>
-                <div class="task-content" onclick="toggleTask(${task.id})">
-                    <div class="task-title">${escHtml(task.text)}</div>
-                    <div class="task-cat-label ${task.category}">${catLabel[task.category] || task.category}</div>
-                </div>
-                <div class="action-btns">
-                    <button class="icon-btn star ${task.starred ? 'active' : ''}" onclick="toggleStar(${task.id})">★</button>
-                    <button class="icon-btn delete" onclick="deleteTask(${task.id})">✕</button>
-                </div>`;
-            taskListEl.appendChild(el);
-        });
-
-        updateProgress();
-        saveTasks();
-    }
-
-    function escHtml(s) {
-        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
-    function addTask() {
-        const text = taskInput.value.trim();
-        if (!text) return;
-        tasks.push({ id: Date.now(), text, category: currentCat, completed: false, starred: false });
-        taskInput.value = '';
-        document.getElementById('emojiPicker').classList.remove('show');
-        document.getElementById('emojiToggleBtn').classList.remove('active');
-        if (currentFilter === 'done') {
-            currentFilter = 'all';
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            document.querySelector('[data-filter="all"]').classList.add('active');
-        }
-        renderTasks();
-    }
-
-    taskInput.addEventListener('keypress', e => { if (e.key === 'Enter') addTask(); });
-
-    function toggleTask(id)     { const t = tasks.find(t=>t.id===id); if(t) t.completed = !t.completed; renderTasks(); }
-    function toggleStar(id)     { const t = tasks.find(t=>t.id===id); if(t) t.starred   = !t.starred;   renderTasks(); }
-    function deleteTask(id)     { tasks = tasks.filter(t=>t.id!==id); renderTasks(); }
-
-    function updateProgress() {
-        const total   = tasks.length;
-        const done    = tasks.filter(t => t.completed).length;
-        const percent = total === 0 ? 0 : Math.round((done/total)*100);
-
-        document.getElementById('progressPercent').innerText = `${percent}%`;
-        document.getElementById('progressFill').style.width  = `${percent}%`;
-        document.getElementById('statCompleted').innerText   = `เสร็จแล้ว ${done}`;
-        document.getElementById('statTotal').innerText       = `ทั้งหมด ${total} รายการ`;
-
-        ['work','personal','health','other'].forEach(cat => {
-            const catTasks = tasks.filter(t => t.category === cat);
-            const cDone  = catTasks.filter(t => t.completed).length;
-            const cTotal = catTasks.length;
-            document.getElementById(`sumFill-${cat}`).style.width = cTotal ? `${(cDone/cTotal)*100}%` : '0%';
-            document.getElementById(`sumText-${cat}`).innerText   = `${cDone}/${cTotal}`;
-        });
-    }
-
-    // Category selector
-    document.getElementById('categorySelector').addEventListener('click', e => {
-        if (e.target.classList.contains('cat-badge')) {
-            document.querySelectorAll('.cat-badge').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            currentCat = e.target.dataset.cat;
-        }
-    });
-
-    // Filter selector
-    document.getElementById('filterSelector').addEventListener('click', e => {
-        if (e.target.classList.contains('filter-btn')) {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            currentFilter = e.target.dataset.filter;
-            renderTasks();
-        }
-    });
-
-    // ===== Emoji picker =====
-    function initEmojiPicker() {
-        const emojiList = ['😀','😂','😍','😎','🤔','😴','💪','🏃‍♂️','💻','📊','📌','🔥','✨','❤️','✅'];
-        const picker    = document.getElementById('emojiPicker');
-        const toggleBtn = document.getElementById('emojiToggleBtn');
-        emojiList.forEach(emoji => {
-            const span = document.createElement('span');
-            span.className = 'emoji-item';
-            span.innerText = emoji;
-            span.onclick = e => {
-                e.stopPropagation();
-                taskInput.value += emoji;
-                picker.classList.remove('show');
-                toggleBtn.classList.remove('active');
-                taskInput.focus();
-            };
-            picker.appendChild(span);
-        });
-        toggleBtn.onclick = e => {
-            e.stopPropagation();
-            picker.classList.toggle('show');
-            toggleBtn.classList.toggle('active');
-        };
-        document.addEventListener('click', e => {
-            if (!picker.contains(e.target) && !toggleBtn.contains(e.target)) {
-                picker.classList.remove('show');
-                toggleBtn.classList.remove('active');
-            }
-        });
-    }
-
-    // ===== Date / Greeting =====
-    function initDateTime() {
-        const days   = ["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสบดี","ศุกร์","เสาร์"];
-        const months = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
-        const now    = new Date();
-        document.getElementById('dateDisplay').innerText =
-            `วัน${days[now.getDay()]}ที่ ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()+543}`;
-
-        const h = now.getHours();
-        let greet = "สวัสดีตอนเย็น", icon = "🌙";
-        if (h < 12) { greet = "อรุณสวัสดิ์";      icon = "☀️"; }
-        else if (h < 17) { greet = "สวัสดีตอนบ่าย"; icon = "🌤️"; }
-        document.getElementById('greetingText').innerText = greet;
-        document.getElementById('greetingIcon').innerText = icon;
-    }
-</script>
-</body>
-</html>
+            <button class="add-btn" onclick="window.addTask()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y
